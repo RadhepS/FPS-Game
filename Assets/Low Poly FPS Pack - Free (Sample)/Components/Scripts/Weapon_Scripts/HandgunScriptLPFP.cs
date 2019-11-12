@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using Photon.Pun;
 
 // ----- Low Poly FPS Pack Free Version -----
-public class HandgunScriptLPFP : MonoBehaviour {
+public class HandgunScriptLPFP : MonoBehaviourPunCallbacks {
 
 	//Animator component attached to weapon
 	Animator anim;
@@ -182,8 +183,8 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 
 	private void LateUpdate () {
-		//Weapon sway
-		if (weaponSway == true) {
+        //Weapon sway
+        if (weaponSway == true) {
 			float movementX = -Input.GetAxis ("Mouse X") * swayAmount;
 			float movementY = -Input.GetAxis ("Mouse Y") * swayAmount;
 			//Clamp movement to min and max values
@@ -201,10 +202,10 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 	
 	private void Update () {
-
-		//Aiming
-		//Toggle camera FOV when right click is held down
-		if(Input.GetButton("Fire2") && !isReloading && !isRunning && !isInspecting) 
+        if (!photonView.IsMine) return;
+        //Aiming
+        //Toggle camera FOV when right click is held down
+        if (Input.GetButton("Fire2") && !isReloading && !isRunning && !isInspecting) 
 		{
 		
 			
