@@ -67,6 +67,8 @@ namespace FPSControllerLPFP
         private SmoothVelocity _velocityZ;
         private bool _isGrounded;
         public GameObject cameraParent;
+        public GameObject gunCamera;
+        public GameObject gunArm;
 
         private readonly RaycastHit[] _groundCastResults = new RaycastHit[8];
         private readonly RaycastHit[] _wallCastResults = new RaycastHit[8];
@@ -74,20 +76,24 @@ namespace FPSControllerLPFP
         /// Initializes the FpsController on start.
         private void Start()
         {
-            cameraParent.SetActive(photonView.IsMine);
-            _rigidbody = GetComponent<Rigidbody>();
-            _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
-            _collider = GetComponent<CapsuleCollider>();
-            _audioSource = GetComponent<AudioSource>();
-			arms = AssignCharactersCamera();
-            _audioSource.clip = walkingSound;
-            _audioSource.loop = true;
-            _rotationX = new SmoothRotation(RotationXRaw);
-            _rotationY = new SmoothRotation(RotationYRaw);
-            _velocityX = new SmoothVelocity();
-            _velocityZ = new SmoothVelocity();
-            Cursor.lockState = CursorLockMode.Locked;
-            ValidateRotationRestriction();
+ 
+                cameraParent.SetActive(photonView.IsMine);
+                gunCamera.SetActive(photonView.IsMine);
+                gunArm.GetComponent<HandgunScriptLPFP>().enabled = photonView.IsMine;
+                _rigidbody = GetComponent<Rigidbody>();
+                _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
+                _collider = GetComponent<CapsuleCollider>();
+                _audioSource = GetComponent<AudioSource>();
+                arms = AssignCharactersCamera();
+                _audioSource.clip = walkingSound;
+                _audioSource.loop = true;
+                _rotationX = new SmoothRotation(RotationXRaw);
+                _rotationY = new SmoothRotation(RotationYRaw);
+                _velocityX = new SmoothVelocity();
+                _velocityZ = new SmoothVelocity();
+                Cursor.lockState = CursorLockMode.Locked;
+                ValidateRotationRestriction();
+            
         }
 			
         private Transform AssignCharactersCamera()

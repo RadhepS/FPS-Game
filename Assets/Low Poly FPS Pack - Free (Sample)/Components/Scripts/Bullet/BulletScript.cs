@@ -41,6 +41,7 @@ public class BulletScript : MonoBehaviour {
 		//If bullet collides with "Metal" tag
 		if (collision.transform.tag == "Metal") 
 		{
+            Debug.Log("in");
 			//Instantiate random impact prefab from array
 			Instantiate (metalImpactPrefabs [Random.Range 
 				(0, metalImpactPrefabs.Length)], transform.position, 

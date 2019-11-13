@@ -15,7 +15,6 @@ public class LookAtCamera : MonoBehaviourPunCallbacks {
 		
 	private void Update () 
 	{
-        if (!photonView.IsMine) return;
         //Object always face camera
         transform.LookAt (Camera.main.transform);
 	}
