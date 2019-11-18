@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
+using Photon.Pun;
 
 namespace FPSControllerLPFP
 {
@@ -8,7 +9,7 @@ namespace FPSControllerLPFP
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
     [RequireComponent(typeof(AudioSource))]
-    public class FpsControllerLPFP : MonoBehaviour
+    public class FpsControllerLPFP : MonoBehaviourPunCallbacks
     {
 #pragma warning disable 649
 		[Header("Arms")]
@@ -69,9 +70,14 @@ namespace FPSControllerLPFP
         private readonly RaycastHit[] _groundCastResults = new RaycastHit[8];
         private readonly RaycastHit[] _wallCastResults = new RaycastHit[8];
 
+        public GameObject mainCamera;
+        public GameObject gunCamera;
+
         /// Initializes the FpsController on start.
         private void Start()
         {
+            mainCamera.SetActive(photonView.IsMine);
+            gunCamera.SetActive(photonView.IsMine);
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
             _collider = GetComponent<CapsuleCollider>();
@@ -135,6 +141,7 @@ namespace FPSControllerLPFP
         /// Processes the character movement and the camera rotation every fixed framerate frame.
         private void FixedUpdate()
         {
+            if (!photonView.IsMine) return;
             // FixedUpdate is used instead of Update because this code is dealing with physics and smoothing.
             RotateCameraAndCharacter();
             MoveCharacter();
@@ -144,6 +151,7 @@ namespace FPSControllerLPFP
         /// Moves the camera to the character, processes jumping and plays sounds every frame.
         private void Update()
         {
+            if (!photonView.IsMine) return;
 			arms.position = transform.position + transform.TransformVector(armPosition);
             Jump();
             PlayFootstepSounds();
