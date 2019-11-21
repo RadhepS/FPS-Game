@@ -72,12 +72,14 @@ namespace FPSControllerLPFP
 
         public GameObject mainCamera;
         public GameObject gunCamera;
+        public GameObject gunArm;
 
         /// Initializes the FpsController on start.
         private void Start()
         {
             mainCamera.SetActive(photonView.IsMine);
             gunCamera.SetActive(photonView.IsMine);
+            gunArm.GetComponent<HandgunScriptLPFP>().isCharacterMine = photonView.IsMine;
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
             _collider = GetComponent<CapsuleCollider>();

@@ -10399,6 +10399,7 @@ MonoBehaviour:
     reloadSoundAmmoLeft: {fileID: 8300000, guid: b0d51244fd32fc647960320540b32f66,
       type: 3}
     aimSound: {fileID: 8300000, guid: acaebc89b98b82142bd2b24edb6081e4, type: 3}
+  isCharacterMine: 0
 --- !u!82 &6211346483029694447
 AudioSource:
   m_ObjectHideFlags: 0
@@ -11070,6 +11071,7 @@ MonoBehaviour:
     jump: Jump
   mainCamera: {fileID: 6275010734123398643}
   gunCamera: {fileID: 6274925174507963493}
+  gunArm: {fileID: 6273996712437663605}
 --- !u!114 &5851420750751459506
 MonoBehaviour:
   m_ObjectHideFlags: 0

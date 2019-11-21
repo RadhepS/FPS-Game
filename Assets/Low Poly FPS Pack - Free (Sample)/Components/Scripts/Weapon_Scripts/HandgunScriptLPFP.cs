@@ -155,6 +155,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	public soundClips SoundClips;
 
 	private bool soundHasPlayed = false;
+    public bool isCharacterMine;
 
 	private void Awake () 
 	{
@@ -182,6 +183,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 
 	private void LateUpdate () {
+        if (!isCharacterMine) return;
 		//Weapon sway
 		if (weaponSway == true) {
 			float movementX = -Input.GetAxis ("Mouse X") * swayAmount;
@@ -201,6 +203,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 	
 	private void Update () {
+        if (!isCharacterMine) return;
 
 		//Aiming
 		//Toggle camera FOV when right click is held down
