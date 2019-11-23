@@ -327,7 +327,7 @@ namespace FPSControllerLPFP
                     }
                 }
                 counter++;
-                Debug.Log(PhotonNetwork.PlayerList.Length);
+                Debug.Log(PhotonNetwork.CountOfPlayersInRooms);
 
             }
 
