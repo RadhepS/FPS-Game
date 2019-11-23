@@ -76,6 +76,7 @@ namespace FPSControllerLPFP
         public int maxHealth;
         private int currentHealth;
         private Manager manager;
+        private Transform uiHealthbar;
 
         private int counter;
         /// Initializes the FpsController on start.
@@ -99,6 +100,11 @@ namespace FPSControllerLPFP
             _velocityZ = new SmoothVelocity();
             Cursor.lockState = CursorLockMode.Locked;
             ValidateRotationRestriction();
+            if (photonView.IsMine)
+            {
+                uiHealthbar = GameObject.Find("HUD/Health/Bar").transform;
+                RefreshHealthBar();
+            }
         }
 
         private Transform AssignCharactersCamera()
@@ -163,6 +169,7 @@ namespace FPSControllerLPFP
             arms.position = transform.position + transform.TransformVector(armPosition);
             Jump();
             PlayFootstepSounds();
+            RefreshHealthBar();
         }
 
         private void RotateCameraAndCharacter()
@@ -241,15 +248,17 @@ namespace FPSControllerLPFP
 
         private void OnCollisionEnter(Collision collision)
         {
-            //Debug.Log("HIT");
-            //Debug.Log("HIT THING " + collision.collider.ToString());
-            //Debug.Log(collision.collider.ToString().Equals("Bullet_Prefab(Clone) (UnityEngine.BoxCollider)"));
-
             if (collision.collider.ToString().Equals("Bullet_Prefab(Clone) (UnityEngine.BoxCollider)"))
             {
                 photonView.RPC("TakeDamage", RpcTarget.All, 25);
             }
 
+        }
+
+        private void RefreshHealthBar()
+        {
+            float healthRatio = (float)(currentHealth) / (float)(maxHealth);
+            uiHealthbar.localScale = Vector3.Lerp(uiHealthbar.localScale, new Vector3(healthRatio, 1, 1), Time.deltaTime * 8f);
         }
 
         private bool CheckCollisionsWithWalls(Vector3 velocity)
@@ -307,7 +316,7 @@ namespace FPSControllerLPFP
             if (photonView.IsMine && counter == 2)
             {
                 currentHealth -= damage;
-                Debug.Log(currentHealth);
+                RefreshHealthBar();
                 counter = 0;
 
                 if (currentHealth <= 0)
