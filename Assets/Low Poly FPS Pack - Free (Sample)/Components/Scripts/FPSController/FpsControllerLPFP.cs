@@ -253,6 +253,7 @@ namespace FPSControllerLPFP
 
         private void OnCollisionEnter(Collision collision)
         {
+            Debug.Log("Collision");
             if (collision.collider.ToString().Equals("Bullet_Prefab(Clone) (UnityEngine.BoxCollider)"))
             {
                 photonView.RPC("TakeDamage", RpcTarget.All, 25);
