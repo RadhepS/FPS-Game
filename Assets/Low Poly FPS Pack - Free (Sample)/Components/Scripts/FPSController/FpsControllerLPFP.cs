@@ -312,6 +312,7 @@ namespace FPSControllerLPFP
         [PunRPC]
         public void TakeDamage(int damage)
         {
+            Debug.Log(PhotonNetwork.CountOfPlayers + counter);
             counter++;
             if (photonView.IsMine && counter == 2)
             {
