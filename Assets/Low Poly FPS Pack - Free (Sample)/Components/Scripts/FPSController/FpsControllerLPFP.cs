@@ -87,6 +87,10 @@ namespace FPSControllerLPFP
             gunCamera.SetActive(photonView.IsMine);
             gunArm.GetComponent<HandgunScriptLPFP>().isCharacterMine = photonView.IsMine;
             manager = GameObject.Find("Manager").GetComponent<Manager>();
+            if (PhotonNetwork.PlayerList.Length > playerCount)
+            {
+                photonView.RPC("UpdatePlayerCount", RpcTarget.All, PhotonNetwork.PlayerList.Length);
+            }
             currentHealth = maxHealth;
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
@@ -105,10 +109,6 @@ namespace FPSControllerLPFP
             {
                 uiHealthbar = GameObject.Find("HUD/Health/Bar").transform;
                 RefreshHealthBar();
-                if (PhotonNetwork.PlayerList.Length > playerCount)
-                {
-                    photonView.RPC("UpdatePlayerCount", RpcTarget.All, PhotonNetwork.PlayerList.Length);
-                }
             }
         }
 
