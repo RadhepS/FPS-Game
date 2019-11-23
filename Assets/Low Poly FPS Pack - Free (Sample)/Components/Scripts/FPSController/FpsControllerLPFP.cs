@@ -76,6 +76,7 @@ namespace FPSControllerLPFP
         public int maxHealth;
         private int currentHealth;
 
+        private int counter;
         /// Initializes the FpsController on start.
         private void Start()
         {
@@ -300,10 +301,12 @@ namespace FPSControllerLPFP
         [PunRPC]
         public void TakeDamage(int damage)
         {
-            if (!photonView.IsMine)
+            counter++;
+            if (photonView.IsMine && counter == 2)
             {
                 currentHealth -= damage;
                 Debug.Log(currentHealth);
+                counter = 0;
             }
 
             if (currentHealth <= 0)
