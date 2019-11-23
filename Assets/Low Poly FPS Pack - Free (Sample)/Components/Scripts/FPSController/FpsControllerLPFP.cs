@@ -250,7 +250,7 @@ namespace FPSControllerLPFP
         {
             if (collision.collider.ToString().Equals("Bullet_Prefab(Clone) (UnityEngine.BoxCollider)"))
             {
-                photonView.RPC("TakeDamage", RpcTarget.All, 25);
+                TakeDamage(25);
             }
 
         }
@@ -309,13 +309,9 @@ namespace FPSControllerLPFP
             }
         }
 
-        [PunRPC]
         public void TakeDamage(int damage)
         {
-            if (photonView.IsMine)
-            {
-                if (counter == PhotonNetwork.CountOfPlayers)
-                {
+     
                     currentHealth -= damage;
                     RefreshHealthBar();
                     counter = 0;
@@ -325,11 +321,6 @@ namespace FPSControllerLPFP
                         manager.Spawn();
                         PhotonNetwork.Destroy(gameObject);
                     }
-                }
-                counter++;
-                Debug.Log(PhotonNetwork.CountOfPlayersInRooms);
-
-            }
 
         }
 			
