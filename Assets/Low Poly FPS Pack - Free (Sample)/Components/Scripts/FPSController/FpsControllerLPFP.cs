@@ -336,9 +336,7 @@ namespace FPSControllerLPFP
         [PunRPC]
         public void UpdatePlayerCount(int number)
         {
-            if (photonView.IsMine) {
                 playerCount = number;
-            }
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
