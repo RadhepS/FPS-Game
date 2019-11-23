@@ -75,6 +75,7 @@ namespace FPSControllerLPFP
         public GameObject gunArm;
         public int maxHealth;
         private int currentHealth;
+        private Manager manager;
 
         private int counter;
         /// Initializes the FpsController on start.
@@ -83,6 +84,7 @@ namespace FPSControllerLPFP
             mainCamera.SetActive(photonView.IsMine);
             gunCamera.SetActive(photonView.IsMine);
             gunArm.GetComponent<HandgunScriptLPFP>().isCharacterMine = photonView.IsMine;
+            manager = GameObject.Find("Manager").GetComponent<Manager>();
             currentHealth = maxHealth;
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
@@ -307,12 +309,14 @@ namespace FPSControllerLPFP
                 currentHealth -= damage;
                 Debug.Log(currentHealth);
                 counter = 0;
+
+                if (currentHealth <= 0)
+                {
+                    manager.Spawn();
+                    PhotonNetwork.Destroy(gameObject);
+                }
             }
 
-            if (currentHealth <= 0)
-            {
-                Debug.Log("YOU DIED");
-            }
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
