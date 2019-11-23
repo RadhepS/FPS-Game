@@ -77,6 +77,7 @@ namespace FPSControllerLPFP
         private int currentHealth;
         private Manager manager;
         private Transform uiHealthbar;
+        public int playerCount;
 
         private int counter;
         /// Initializes the FpsController on start.
@@ -104,6 +105,10 @@ namespace FPSControllerLPFP
             {
                 uiHealthbar = GameObject.Find("HUD/Health/Bar").transform;
                 RefreshHealthBar();
+                if (PhotonNetwork.PlayerList.Length > playerCount)
+                {
+                    photonView.RPC("UpdatePlayerCount", RpcTarget.All, PhotonNetwork.PlayerList.Length);
+                }
             }
         }
 
@@ -313,7 +318,7 @@ namespace FPSControllerLPFP
         public void TakeDamage(int damage)
         {
             counter++;
-            if (photonView.IsMine && counter == 2)
+            if (photonView.IsMine && counter == playerCount)
             {
                 currentHealth -= damage;
                 RefreshHealthBar();
@@ -326,6 +331,14 @@ namespace FPSControllerLPFP
                 }
             }
 
+        }
+
+        [PunRPC]
+        public void UpdatePlayerCount(int number)
+        {
+            if (photonView.IsMine) {
+                playerCount = number;
+            }
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
