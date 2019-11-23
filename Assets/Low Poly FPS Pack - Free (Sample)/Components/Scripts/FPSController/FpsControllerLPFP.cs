@@ -311,17 +311,19 @@ namespace FPSControllerLPFP
 
         public void TakeDamage(int damage)
         {
-     
-                    currentHealth -= damage;
-                    RefreshHealthBar();
-                    counter = 0;
 
-                    if (currentHealth <= 0)
-                    {
-                        manager.Spawn();
-                        PhotonNetwork.Destroy(gameObject);
-                    }
+            if (photonView.IsMine)
+            {
+                currentHealth -= damage;
+                RefreshHealthBar();
+                counter = 0;
 
+                if (currentHealth <= 0)
+                {
+                    manager.Spawn();
+                    PhotonNetwork.Destroy(gameObject);
+                }
+            }
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
