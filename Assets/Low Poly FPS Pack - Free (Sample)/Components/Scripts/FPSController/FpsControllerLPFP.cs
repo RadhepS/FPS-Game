@@ -314,7 +314,6 @@ namespace FPSControllerLPFP
         {
             if (photonView.IsMine)
             {
-                counter++;
                 if (counter == PhotonNetwork.CountOfPlayers)
                 {
                     currentHealth -= damage;
@@ -327,6 +326,8 @@ namespace FPSControllerLPFP
                         PhotonNetwork.Destroy(gameObject);
                     }
                 }
+                counter++;
+                Debug.Log(counter);
 
             }
 
