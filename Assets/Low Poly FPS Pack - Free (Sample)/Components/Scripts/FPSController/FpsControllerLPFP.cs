@@ -327,7 +327,7 @@ namespace FPSControllerLPFP
                     }
                 }
                 counter++;
-                Debug.Log(counter);
+                Debug.Log(CountOfPlayers);
 
             }
 
