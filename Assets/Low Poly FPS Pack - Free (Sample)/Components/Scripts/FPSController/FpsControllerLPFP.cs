@@ -312,19 +312,22 @@ namespace FPSControllerLPFP
         [PunRPC]
         public void TakeDamage(int damage)
         {
-            Debug.Log(PhotonNetwork.CountOfPlayers + counter);
-            counter++;
-            if (photonView.IsMine && counter == 2)
+            if (photonView.IsMine)
             {
-                currentHealth -= damage;
-                RefreshHealthBar();
-                counter = 0;
-
-                if (currentHealth <= 0)
+                counter++;
+                if (counter == PhotonNetwork.CountOfPlayers)
                 {
-                    manager.Spawn();
-                    PhotonNetwork.Destroy(gameObject);
+                    currentHealth -= damage;
+                    RefreshHealthBar();
+                    counter = 0;
+
+                    if (currentHealth <= 0)
+                    {
+                        manager.Spawn();
+                        PhotonNetwork.Destroy(gameObject);
+                    }
                 }
+
             }
 
         }
