@@ -547,6 +547,7 @@ public class HandgunScriptLPFP : MonoBehaviourPunCallbacks {
             Spawnpoints.bulletSpawnPoint.transform.rotation);
 
         //Add velocity to the bullet
+        bullet.GetComponent<Rigidbody>().mass = 0;
         bullet.GetComponent<Rigidbody>().velocity =
         bullet.transform.forward * bulletForce;
 
