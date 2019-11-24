@@ -77,6 +77,7 @@ namespace FPSControllerLPFP
         private int currentHealth;
         private Manager manager;
         private Transform uiHealthbar;
+        public int playerCount;
 
         private int counter;
         /// Initializes the FpsController on start.
@@ -86,6 +87,10 @@ namespace FPSControllerLPFP
             gunCamera.SetActive(photonView.IsMine);
             gunArm.GetComponent<HandgunScriptLPFP>().isCharacterMine = photonView.IsMine;
             manager = GameObject.Find("Manager").GetComponent<Manager>();
+            if (PhotonNetwork.PlayerList.Length > playerCount)
+            {
+                photonView.RPC("UpdatePlayerCount", RpcTarget.All, PhotonNetwork.PlayerList.Length);
+            }
             currentHealth = maxHealth;
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
@@ -313,7 +318,7 @@ namespace FPSControllerLPFP
         public void TakeDamage(int damage)
         {
             counter++;
-            if (photonView.IsMine && counter == 2)
+            if (photonView.IsMine && counter == playerCount)
             {
                 currentHealth -= damage;
                 RefreshHealthBar();
@@ -326,6 +331,12 @@ namespace FPSControllerLPFP
                 }
             }
 
+        }
+
+        [PunRPC]
+        public void UpdatePlayerCount(int number)
+        {
+                playerCount = number;
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
