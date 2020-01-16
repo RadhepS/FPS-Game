@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.UI;
+using Photon.Pun;
 
 // ----- Low Poly FPS Pack Free Version -----
-public class HandgunScriptLPFP : MonoBehaviour {
+public class HandgunScriptLPFP : MonoBehaviourPunCallbacks {
 
 	//Animator component attached to weapon
 	Animator anim;
@@ -155,6 +156,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	public soundClips SoundClips;
 
 	private bool soundHasPlayed = false;
+    public bool isCharacterMine;
 
 	private void Awake () 
 	{
@@ -182,6 +184,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 
 	private void LateUpdate () {
+        if (!isCharacterMine) return;
 		//Weapon sway
 		if (weaponSway == true) {
 			float movementX = -Input.GetAxis ("Mouse X") * swayAmount;
@@ -201,35 +204,18 @@ public class HandgunScriptLPFP : MonoBehaviour {
 	}
 	
 	private void Update () {
+        if (!isCharacterMine) return;
 
 		//Aiming
 		//Toggle camera FOV when right click is held down
 		if(Input.GetButton("Fire2") && !isReloading && !isRunning && !isInspecting) 
 		{
-		
-			
-			isAiming = true;
-
-			anim.SetBool ("Aim", true);
-
-			if (!soundHasPlayed) 
-			{
-				mainAudioSource.clip = SoundClips.aimSound;
-				mainAudioSource.Play ();
-	
-				soundHasPlayed = true;
-			}
-		} 
+            photonView.RPC("Aim", RpcTarget.All);
+        } 
 		else 
 		{
-			//When right click is released
-			gunCamera.fieldOfView = Mathf.Lerp(gunCamera.fieldOfView,
-				defaultFov,fovSpeed * Time.deltaTime);
-
-			isAiming = false;
-	
-			anim.SetBool ("Aim", false);
-		}
+            photonView.RPC("UnAim", RpcTarget.All);
+        }
 		//Aiming end
 
 		//If randomize muzzleflash is true, genereate random int values
@@ -326,75 +312,8 @@ public class HandgunScriptLPFP : MonoBehaviour {
 		//Shooting 
 		if (Input.GetMouseButtonDown (0) && !outOfAmmo && !isReloading && !isInspecting && !isRunning) 
 		{
-			anim.Play ("Fire", 0, 0f);
-	
-			muzzleParticles.Emit (1);
-				
-			//Remove 1 bullet from ammo
-			currentAmmo -= 1;
-
-			shootAudioSource.clip = SoundClips.shootSound;
-			shootAudioSource.Play ();
-
-			//Light flash start
-			StartCoroutine(MuzzleFlashLight());
-
-			if (!isAiming) //if not aiming
-			{
-				anim.Play ("Fire", 0, 0f);
-		
-				muzzleParticles.Emit (1);
-
-				if (enableSparks == true) 
-				{
-					//Emit random amount of spark particles
-					sparkParticles.Emit (Random.Range (1, 6));
-				}
-			} 
-			else //if aiming
-			{
-				anim.Play ("Aim Fire", 0, 0f);
-					
-				//If random muzzle is false
-				if (!randomMuzzleflash) {
-					muzzleParticles.Emit (1);
-					//If random muzzle is true
-				} 
-				else if (randomMuzzleflash == true) 
-				{
-					//Only emit if random value is 1
-					if (randomMuzzleflashValue == 1) 
-					{
-						if (enableSparks == true) 
-						{
-							//Emit random amount of spark particles
-							sparkParticles.Emit (Random.Range (1, 6));
-						}
-						if (enableMuzzleflash == true) 
-						{
-							muzzleParticles.Emit (1);
-							//Light flash start
-							StartCoroutine (MuzzleFlashLight ());
-						}
-					}
-				}
-			}
-				
-			//Spawn bullet at bullet spawnpoint
-			var bullet = (Transform)Instantiate (
-				Prefabs.bulletPrefab,
-				Spawnpoints.bulletSpawnPoint.transform.position,
-				Spawnpoints.bulletSpawnPoint.transform.rotation);
-
-			//Add velocity to the bullet
-			bullet.GetComponent<Rigidbody>().velocity = 
-			bullet.transform.forward * bulletForce;
-
-			//Spawn casing prefab at spawnpoint
-			Instantiate (Prefabs.casingPrefab, 
-				Spawnpoints.casingSpawnPoint.transform.position, 
-				Spawnpoints.casingSpawnPoint.transform.rotation);
-		}
+            photonView.RPC("Shoot", RpcTarget.All);
+        }
 
 		//Inspect weapon when pressing T key
 		if (Input.GetKeyDown (KeyCode.T)) 
@@ -435,15 +354,10 @@ public class HandgunScriptLPFP : MonoBehaviour {
 		//Reload 
 		if (Input.GetKeyDown (KeyCode.R) && !isReloading && !isInspecting) 
 		{
-			//Reload
-			Reload ();
+            photonView.RPC("Reload", RpcTarget.All);
 
-			if (!hasStartedSliderBack) 
-			{
-				hasStartedSliderBack = true;
-				StartCoroutine (HandgunSliderBackDelay());
-			}
-		}
+
+        }
 
 		////Walking when pressing down WASD keys
 		//if (Input.GetKey (KeyCode.W) && !isRunning || 
@@ -525,47 +439,7 @@ public class HandgunScriptLPFP : MonoBehaviour {
 		outOfAmmo = false;
 	}
 
-	//Reload
-	private void Reload () {
-		
-		if (outOfAmmo == true) 
-		{
-			//Play diff anim if out of ammo
-			anim.Play ("Reload Out Of Ammo", 0, 0f);
-
-			mainAudioSource.clip = SoundClips.reloadSoundOutOfAmmo;
-			mainAudioSource.Play ();
-
-			//If out of ammo, hide the bullet renderer in the mag
-			//Do not show if bullet renderer is not assigned in inspector
-			if (bulletInMagRenderer != null) 
-			{
-				bulletInMagRenderer.GetComponent
-				<SkinnedMeshRenderer> ().enabled = false;
-				//Start show bullet delay
-				StartCoroutine (ShowBulletInMag ());
-			}
-		} 
-		else 
-		{
-			//Play diff anim if ammo left
-			anim.Play ("Reload Ammo Left", 0, 0f);
-
-			mainAudioSource.clip = SoundClips.reloadSoundAmmoLeft;
-			mainAudioSource.Play ();
-
-			//If reloading when ammo left, show bullet in mag
-			//Do not show if bullet renderer is not assigned in inspector
-			if (bulletInMagRenderer != null) 
-			{
-				bulletInMagRenderer.GetComponent
-				<SkinnedMeshRenderer> ().enabled = true;
-			}
-		}
-		//Restore ammo when reloading
-		currentAmmo = ammo;
-		outOfAmmo = false;
-	}
+	
 
 	//Enable bullet in mag renderer after set amount of time
 	private IEnumerator ShowBulletInMag () {
@@ -607,5 +481,159 @@ public class HandgunScriptLPFP : MonoBehaviour {
 			isInspecting = false;
 		}
 	}
+
+    [PunRPC]
+    private void Shoot()
+    {
+        anim.Play("Fire", 0, 0f);
+
+        muzzleParticles.Emit(1);
+
+        //Remove 1 bullet from ammo
+        currentAmmo -= 1;
+
+        shootAudioSource.clip = SoundClips.shootSound;
+        shootAudioSource.Play();
+
+        //Light flash start
+        StartCoroutine(MuzzleFlashLight());
+
+        if (!isAiming) //if not aiming
+        {
+            anim.Play("Fire", 0, 0f);
+
+            muzzleParticles.Emit(1);
+
+            if (enableSparks == true)
+            {
+                //Emit random amount of spark particles
+                sparkParticles.Emit(Random.Range(1, 6));
+            }
+        }
+        else //if aiming
+        {
+            anim.Play("Aim Fire", 0, 0f);
+
+            //If random muzzle is false
+            if (!randomMuzzleflash)
+            {
+                muzzleParticles.Emit(1);
+                //If random muzzle is true
+            }
+            else if (randomMuzzleflash == true)
+            {
+                //Only emit if random value is 1
+                if (randomMuzzleflashValue == 1)
+                {
+                    if (enableSparks == true)
+                    {
+                        //Emit random amount of spark particles
+                        sparkParticles.Emit(Random.Range(1, 6));
+                    }
+                    if (enableMuzzleflash == true)
+                    {
+                        muzzleParticles.Emit(1);
+                        //Light flash start
+                        StartCoroutine(MuzzleFlashLight());
+                    }
+                }
+            }
+        }
+
+        //Spawn bullet at bullet spawnpoint
+        var bullet = (Transform)Instantiate(
+            Prefabs.bulletPrefab,
+            Spawnpoints.bulletSpawnPoint.transform.position,
+            Spawnpoints.bulletSpawnPoint.transform.rotation);
+
+        //Add velocity to the bullet
+        bullet.GetComponent<Rigidbody>().mass = 0;
+        bullet.GetComponent<Rigidbody>().velocity =
+        bullet.transform.forward * bulletForce;
+
+        //Spawn casing prefab at spawnpoint
+        Instantiate(Prefabs.casingPrefab,
+            Spawnpoints.casingSpawnPoint.transform.position,
+            Spawnpoints.casingSpawnPoint.transform.rotation);
+    }
+
+    [PunRPC]
+    private void Aim()
+    {
+
+        isAiming = true;
+
+        anim.SetBool("Aim", true);
+
+        if (!soundHasPlayed)
+        {
+            mainAudioSource.clip = SoundClips.aimSound;
+            mainAudioSource.Play();
+
+            soundHasPlayed = true;
+        }
+    }
+
+    [PunRPC]
+    private void UnAim()
+    {
+        //When right click is released
+        gunCamera.fieldOfView = Mathf.Lerp(gunCamera.fieldOfView,
+            defaultFov, fovSpeed * Time.deltaTime);
+
+        isAiming = false;
+
+        anim.SetBool("Aim", false);
+    }
+
+    //Reload
+    [PunRPC]
+    private void Reload()
+    {
+
+        if (outOfAmmo == true)
+        {
+            //Play diff anim if out of ammo
+            anim.Play("Reload Out Of Ammo", 0, 0f);
+
+            mainAudioSource.clip = SoundClips.reloadSoundOutOfAmmo;
+            mainAudioSource.Play();
+
+            //If out of ammo, hide the bullet renderer in the mag
+            //Do not show if bullet renderer is not assigned in inspector
+            if (bulletInMagRenderer != null)
+            {
+                bulletInMagRenderer.GetComponent
+                <SkinnedMeshRenderer>().enabled = false;
+                //Start show bullet delay
+                StartCoroutine(ShowBulletInMag());
+            }
+        }
+        else
+        {
+            //Play diff anim if ammo left
+            anim.Play("Reload Ammo Left", 0, 0f);
+
+            mainAudioSource.clip = SoundClips.reloadSoundAmmoLeft;
+            mainAudioSource.Play();
+
+            //If reloading when ammo left, show bullet in mag
+            //Do not show if bullet renderer is not assigned in inspector
+            if (bulletInMagRenderer != null)
+            {
+                bulletInMagRenderer.GetComponent
+                <SkinnedMeshRenderer>().enabled = true;
+            }
+        }
+        //Restore ammo when reloading
+        currentAmmo = ammo;
+        outOfAmmo = false;
+
+        if (!hasStartedSliderBack)
+        {
+            hasStartedSliderBack = true;
+            StartCoroutine(HandgunSliderBackDelay());
+        }
+    }
 }
 // ----- Low Poly FPS Pack Free Version -----

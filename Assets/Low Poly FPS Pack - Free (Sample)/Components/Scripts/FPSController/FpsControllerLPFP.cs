@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using UnityEngine;
+using Photon.Pun;
 
 namespace FPSControllerLPFP
 {
@@ -8,24 +9,24 @@ namespace FPSControllerLPFP
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(CapsuleCollider))]
     [RequireComponent(typeof(AudioSource))]
-    public class FpsControllerLPFP : MonoBehaviour
+    public class FpsControllerLPFP : MonoBehaviourPunCallbacks
     {
 #pragma warning disable 649
-		[Header("Arms")]
+        [Header("Arms")]
         [Tooltip("The transform component that holds the gun camera."), SerializeField]
         private Transform arms;
 
         [Tooltip("The position of the arms and gun camera relative to the fps controller GameObject."), SerializeField]
         private Vector3 armPosition;
 
-		[Header("Audio Clips")]
+        [Header("Audio Clips")]
         [Tooltip("The audio clip that is played while walking."), SerializeField]
         private AudioClip walkingSound;
 
         [Tooltip("The audio clip that is played while running."), SerializeField]
         private AudioClip runningSound;
 
-		[Header("Movement Settings")]
+        [Header("Movement Settings")]
         [Tooltip("How fast the player moves while walking and strafing."), SerializeField]
         private float walkingSpeed = 5f;
 
@@ -38,7 +39,7 @@ namespace FPSControllerLPFP
         [Tooltip("Amount of force applied to the player when jumping."), SerializeField]
         private float jumpForce = 35f;
 
-		[Header("Look Settings")]
+        [Header("Look Settings")]
         [Tooltip("Rotation speed of the fps controller."), SerializeField]
         private float mouseSensitivity = 7f;
 
@@ -69,14 +70,33 @@ namespace FPSControllerLPFP
         private readonly RaycastHit[] _groundCastResults = new RaycastHit[8];
         private readonly RaycastHit[] _wallCastResults = new RaycastHit[8];
 
+        public GameObject mainCamera;
+        public GameObject gunCamera;
+        public GameObject gunArm;
+        public int maxHealth;
+        private int currentHealth;
+        private Manager manager;
+        private Transform uiHealthbar;
+        public int playerCount;
+
+        private int counter;
         /// Initializes the FpsController on start.
         private void Start()
         {
+            mainCamera.SetActive(photonView.IsMine);
+            gunCamera.SetActive(photonView.IsMine);
+            gunArm.GetComponent<HandgunScriptLPFP>().isCharacterMine = photonView.IsMine;
+            manager = GameObject.Find("Manager").GetComponent<Manager>();
+            if (PhotonNetwork.PlayerList.Length > playerCount)
+            {
+                photonView.RPC("UpdatePlayerCount", RpcTarget.All, PhotonNetwork.PlayerList.Length);
+            }
+            currentHealth = maxHealth;
             _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.constraints = RigidbodyConstraints.FreezeRotation;
             _collider = GetComponent<CapsuleCollider>();
             _audioSource = GetComponent<AudioSource>();
-			arms = AssignCharactersCamera();
+            arms = AssignCharactersCamera();
             _audioSource.clip = walkingSound;
             _audioSource.loop = true;
             _rotationX = new SmoothRotation(RotationXRaw);
@@ -85,15 +105,20 @@ namespace FPSControllerLPFP
             _velocityZ = new SmoothVelocity();
             Cursor.lockState = CursorLockMode.Locked;
             ValidateRotationRestriction();
+            if (photonView.IsMine)
+            {
+                uiHealthbar = GameObject.Find("HUD/Health/Bar").transform;
+                RefreshHealthBar();
+            }
         }
-			
+
         private Transform AssignCharactersCamera()
         {
             var t = transform;
-			arms.SetPositionAndRotation(t.position, t.rotation);
-			return arms;
+            arms.SetPositionAndRotation(t.position, t.rotation);
+            return arms;
         }
-        
+
         /// Clamps <see cref="minVerticalAngle"/> and <see cref="maxVerticalAngle"/> to valid values and
         /// ensures that <see cref="minVerticalAngle"/> is less than <see cref="maxVerticalAngle"/>.
         private void ValidateRotationRestriction()
@@ -114,7 +139,7 @@ namespace FPSControllerLPFP
             Debug.LogWarning(message);
             return Mathf.Clamp(rotationRestriction, min, max);
         }
-			
+
         /// Checks if the character is on the ground.
         private void OnCollisionStay()
         {
@@ -131,22 +156,25 @@ namespace FPSControllerLPFP
 
             _isGrounded = true;
         }
-			
+
         /// Processes the character movement and the camera rotation every fixed framerate frame.
         private void FixedUpdate()
         {
+            if (!photonView.IsMine) return;
             // FixedUpdate is used instead of Update because this code is dealing with physics and smoothing.
             RotateCameraAndCharacter();
             MoveCharacter();
             _isGrounded = false;
         }
-			
+
         /// Moves the camera to the character, processes jumping and plays sounds every frame.
         private void Update()
         {
-			arms.position = transform.position + transform.TransformVector(armPosition);
+            if (!photonView.IsMine) return;
+            arms.position = transform.position + transform.TransformVector(armPosition);
             Jump();
             PlayFootstepSounds();
+            RefreshHealthBar();
         }
 
         private void RotateCameraAndCharacter()
@@ -155,36 +183,36 @@ namespace FPSControllerLPFP
             var rotationY = _rotationY.Update(RotationYRaw, rotationSmoothness);
             var clampedY = RestrictVerticalRotation(rotationY);
             _rotationY.Current = clampedY;
-			var worldUp = arms.InverseTransformDirection(Vector3.up);
-			var rotation = arms.rotation *
+            var worldUp = arms.InverseTransformDirection(Vector3.up);
+            var rotation = arms.rotation *
                            Quaternion.AngleAxis(rotationX, worldUp) *
                            Quaternion.AngleAxis(clampedY, Vector3.left);
             transform.eulerAngles = new Vector3(0f, rotation.eulerAngles.y, 0f);
-			arms.rotation = rotation;
+            arms.rotation = rotation;
         }
-			
+
         /// Returns the target rotation of the camera around the y axis with no smoothing.
         private float RotationXRaw
         {
             get { return input.RotateX * mouseSensitivity; }
         }
-			
+
         /// Returns the target rotation of the camera around the x axis with no smoothing.
         private float RotationYRaw
         {
             get { return input.RotateY * mouseSensitivity; }
         }
-			
+
         /// Clamps the rotation of the camera around the x axis
         /// between the <see cref="minVerticalAngle"/> and <see cref="maxVerticalAngle"/> values.
         private float RestrictVerticalRotation(float mouseY)
         {
-			var currentAngle = NormalizeAngle(arms.eulerAngles.x);
+            var currentAngle = NormalizeAngle(arms.eulerAngles.x);
             var minY = minVerticalAngle + currentAngle;
             var maxY = maxVerticalAngle + currentAngle;
             return Mathf.Clamp(mouseY, minY + 0.01f, maxY - 0.01f);
         }
-			
+
         /// Normalize an angle between -180 and 180 degrees.
         /// <param name="angleDegrees">angle to normalize</param>
         /// <returns>normalized angle</returns>
@@ -221,6 +249,21 @@ namespace FPSControllerLPFP
             var rigidbodyVelocity = _rigidbody.velocity;
             var force = new Vector3(smoothX - rigidbodyVelocity.x, 0f, smoothZ - rigidbodyVelocity.z);
             _rigidbody.AddForce(force, ForceMode.VelocityChange);
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (collision.collider.ToString().Equals("Bullet_Prefab(Clone) (UnityEngine.BoxCollider)"))
+            {
+                photonView.RPC("TakeDamage", RpcTarget.All, 25);
+            }
+
+        }
+
+        private void RefreshHealthBar()
+        {
+            float healthRatio = (float)(currentHealth) / (float)(maxHealth);
+            uiHealthbar.localScale = Vector3.Lerp(uiHealthbar.localScale, new Vector3(healthRatio, 1, 1), Time.deltaTime * 8f);
         }
 
         private bool CheckCollisionsWithWalls(Vector3 velocity)
@@ -269,6 +312,31 @@ namespace FPSControllerLPFP
                     _audioSource.Pause();
                 }
             }
+        }
+
+        [PunRPC]
+        public void TakeDamage(int damage)
+        {
+            counter++;
+            if (photonView.IsMine && counter == playerCount)
+            {
+                currentHealth -= damage;
+                RefreshHealthBar();
+                counter = 0;
+
+                if (currentHealth <= 0)
+                {
+                    manager.Spawn();
+                    PhotonNetwork.Destroy(gameObject);
+                }
+            }
+
+        }
+
+        [PunRPC]
+        public void UpdatePlayerCount(int number)
+        {
+                playerCount = number;
         }
 			
         /// A helper for assistance with smoothing the camera rotation.
